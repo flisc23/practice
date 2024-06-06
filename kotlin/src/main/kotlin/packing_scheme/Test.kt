@@ -26,7 +26,7 @@ fun main() {
 //        Product("Product 2", 70, 250, 70, 5)
 //    )
     val shipments = listOf(
-        ShipmentBatch(Product("Product 1", 50, 50, 50, 6),
+        ShipmentBatch(Product("Product 1", 50, 50, 50, 8),
             listOf(
                 PackingScheme(3, Box("Small Box-1", 100, 100, 100, 1000,  availableQTY = 3)),
                 PackingScheme(5, Box("Medium Box-1", 200, 200, 200, 2000, availableQTY = 5)),
@@ -115,6 +115,7 @@ fun generateOptions(
         packingSchemes.forEach {
             restByDiv.set((product.quantity / it.qty).toInt(), product.quantity % it.qty)
         }
+
         restByDiv = restByDiv.toSortedMap()
         // rest 0 and min nr. of boxes
         val bestOption = restByDiv.entries.filter { it.value == 0 && it.key != 0 }
@@ -128,11 +129,14 @@ fun generateOptions(
                 packs.add(Pack(bestScheme.box, mutableMapOf(product to bestScheme.qty)))
             }
         } else {
-
+            val optionPicked = restByDiv.entries.filter { it.key != 0 }.minBy { it.key }
+            val pickedScheme = packingSchemes.filter { (product.quantity / it.qty).toInt() == optionPicked.key }.first()
+            pickedScheme.box.availableQTY = 0
+            product.quantity -= pickedScheme.qty
+            packs.add(Pack(pickedScheme.box, mutableMapOf(product to pickedScheme.qty)))
         }
 
-
-        // AFL 6/6/24 TODO : check and implement other cases , currently only the best and easy one is done
+        // AFL 6/6/24 TODO : check product.quantity == 0, and call the above logic recursively
         // AFL 6/6/24 TODO : consider reiterating on final version
 
 //        packs.forEach { it.prettyPrint() }
