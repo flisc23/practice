@@ -1,6 +1,6 @@
 import java.util.*
 
-data class Product(val name: String, val width: Int, val length: Int, val height: Int, var quantity: Int)
+data class Product(val name: String, val width: Int, val length: Int, val height: Int, var quantity: Double)
 data class Box(
     val name: String,
     val width: Int,
@@ -10,7 +10,7 @@ data class Box(
     val id: String = UUID.randomUUID().toString(),
     var availableQTY: Int?
 )
-data class PackingScheme( val qty: Int, val box: Box )
+data class PackingScheme( val qty: Double, val box: Box )
 data class ShipmentBatch(
     val product: Product,
     val packingSchemes: List<PackingScheme>
@@ -26,83 +26,26 @@ fun main() {
 //        Product("Product 2", 70, 250, 70, 5)
 //    )
     val shipments = listOf(
-        ShipmentBatch(Product("Product 1", 50, 50, 50, 8),
+        ShipmentBatch(Product("Product 1", 50, 50, 50, 5.00),
             listOf(
-                PackingScheme(3, Box("Small Box-1", 100, 100, 100, 1000,  availableQTY = 3)),
-                PackingScheme(5, Box("Medium Box-1", 200, 200, 200, 2000, availableQTY = 5)),
-                PackingScheme(10, Box("Large Box-1", 500, 500, 500, 3000, availableQTY = 10)),
+                PackingScheme(3.00, Box("Small Box-1", 100, 100, 100, 1000,  availableQTY = 3)),
+                PackingScheme(5.00, Box("Medium Box-1", 200, 200, 200, 2000, availableQTY = 5)),
+                PackingScheme(10.00, Box("Large Box-1", 500, 500, 500, 3000, availableQTY = 10)),
             )),
-        ShipmentBatch(Product("Product 2", 70, 300, 70, 5),
+        ShipmentBatch(Product("Product 2", 70, 300, 70, 4.00),
             listOf(
-                PackingScheme(2, Box("Small Box-2", 100, 100, 100, 1000, availableQTY = 2)),
-                PackingScheme(5, Box("Medium Box-2", 200, 200, 200, 2000, availableQTY = 5)),
-                PackingScheme(7, Box("Large Box-2", 500, 500, 500, 3000, availableQTY = 7)),
+                PackingScheme(2.00, Box("Small Box-2", 100, 100, 100, 1000, availableQTY = 2)),
+                PackingScheme(5.00, Box("Medium Box-2", 200, 200, 200, 2000, availableQTY = 5)),
+                PackingScheme(7.00, Box("Large Box-2", 500, 500, 500, 3000, availableQTY = 7)),
             ))
     )
 
-//    shipments.forEach { batch ->
-////        div and rest
-//        var options = mutableListOf<Pair<Double, Double>>()
-//        batch.packingSchemes.forEach { scheme ->
-//            options.add((batch.product.quantity / scheme.qty).toDouble() to (batch.product.quantity % scheme.qty).toDouble())
-//        }
-//
-//        println(batch.product.name + options)
-//    }
-
     // Finding the best packing method
-    val bestPacking = findBestPackingMethod(shipments)
+    val bestPacking = generateOptions(shipments)
 
-    // Display the result
-    bestPacking.forEach { (box, contents) ->
-        println("Box: ${box.name}, contains:")
-        contents.forEach { (product, quantity) ->
-            println("  - ${quantity}x ${product.name}")
-        }
-    }
 }
 
-
-fun findBestPackingMethod(shipments: List<ShipmentBatch>): Map<Box, Map<Product, Int>> {
-    val packingOptions = shipments.flatMap { batch ->
-        batch.packingSchemes.map { scheme ->
-            scheme.box to (batch.product to scheme.qty)
-        }
-    }.groupBy({ it.first }, { it.second })
-
-    val possibleCombinations = generateCombinations(packingOptions, shipments)
-
-//    var bestCombination: Map<Box, Map<Product, Int>>? = null
-//    var minBoxes = Int.MAX_VALUE
-//
-//    for (combination in possibleCombinations) {
-//        val totalBoxes = combination.values.size
-//        if (totalBoxes < minBoxes) {
-//            minBoxes = totalBoxes
-//            bestCombination = combination
-//        }
-//    }
-
-    return emptyMap()
-}
-
-fun generateCombinations(packingOptions: Map<Box, List<Pair<Product, Int>>>, shipments: List<ShipmentBatch>):
-        List<Map<Box, Map<Product, Int>>> {
-    val combinations = mutableListOf<Map<Box, Map<Product, Int>>>()
-    generateOptions(packingOptions, shipments, mutableMapOf(), combinations)
-    return combinations
-}
-
-fun generateOptions(
-    packingOptions: Map<Box, List<Pair<Product, Int>>>,
-    shipments: List<ShipmentBatch>,
-    currentCombination: MutableMap<Box, MutableMap<Product, Int>>,
-    combinations: MutableList<Map<Box, Map<Product, Int>>>) {
-
-    if (shipments.isEmpty()) {
-        combinations.add(currentCombination.mapValues { it.value.toMap() })
-        return
-    }
+fun generateOptions(shipments: List<ShipmentBatch>) {
 
     val packs: MutableList<Pack> = mutableListOf()
 
@@ -111,30 +54,12 @@ fun generateOptions(
         val packingSchemes = batch.packingSchemes
         val prodQty = product.quantity
 
-        var restByDiv = mutableMapOf<Int, Int>()
-        packingSchemes.forEach {
-            restByDiv.set((product.quantity / it.qty).toInt(), product.quantity % it.qty)
-        }
+        do {
+            findMatchInSchemes(packingSchemes, product, packs)
+        } while (product.quantity != 0.00)
 
-        restByDiv = restByDiv.toSortedMap()
-        // rest 0 and min nr. of boxes
-        val bestOption = restByDiv.entries.filter { it.value == 0 && it.key != 0 }
+       "stop".prettyPrint()
 
-        if (bestOption.isNotEmpty()) {
-            val bestScheme = packingSchemes.filter { (product.quantity / it.qty).toInt() == bestOption.first().key }.first()
-            val bestPacking = bestOption.first()
-            for (i in 0..bestPacking.key - 1) {
-                bestScheme.box.availableQTY = 0
-                product.quantity -= bestScheme.qty
-                packs.add(Pack(bestScheme.box, mutableMapOf(product to bestScheme.qty)))
-            }
-        } else {
-            val optionPicked = restByDiv.entries.filter { it.key != 0 }.minBy { it.key }
-            val pickedScheme = packingSchemes.filter { (product.quantity / it.qty).toInt() == optionPicked.key }.first()
-            pickedScheme.box.availableQTY = 0
-            product.quantity -= pickedScheme.qty
-            packs.add(Pack(pickedScheme.box, mutableMapOf(product to pickedScheme.qty)))
-        }
 
         // AFL 6/6/24 TODO : check product.quantity == 0, and call the above logic recursively
         // AFL 6/6/24 TODO : consider reiterating on final version
@@ -167,53 +92,91 @@ fun generateOptions(
     println("stop")
 }
 
-fun generateCombinationsRecursively(
-    packingOptions: Map<Box, List<Pair<Product, Int>>>,
-    shipments: List<ShipmentBatch>,
-    currentCombination: MutableMap<Box, MutableMap<Product, Int>>,
-    combinations: MutableList<Map<Box, Map<Product, Int>>>) {
-
-    if (shipments.isEmpty()) {
-        combinations.add(currentCombination.mapValues { it.value.toMap() })
-        return
+private fun findMatchInSchemes(
+    packingSchemes: List<PackingScheme>,
+    product: Product,
+    packs: MutableList<Pack>
+) {
+    var restByDiv = mutableMapOf<Double, Int>()
+    packingSchemes.forEach {
+        restByDiv.set((product.quantity / it.qty), (product.quantity % it.qty).toInt())
     }
+    restByDiv = restByDiv.toSortedMap()
+    // rest 0 and min nr. of boxes
+    val bestOption = restByDiv.entries.filter { it.value == 0 && it.key != 0.00 }
 
-    val batch = shipments.first()
-    val remainingShipments = shipments.drop(1)
-    val product = batch.product
-    val packingSchemes = batch.packingSchemes
-
-    for (scheme in packingSchemes) {
-        val box = scheme.box
-        val quantity = scheme.qty
-
-//        val currentPackedQuantity = currentCombination[box]?.get(product) ?: 0
-//        val totalPackedQuantity = currentPackedQuantity + quantity
-
-        if (product.quantity % scheme.qty == 0) {
-            currentCombination.getOrPut(box) { mutableMapOf() }[product] = scheme.qty
-            product.quantity -= scheme.qty
-        } else {
-
+    if (bestOption.isNotEmpty()) {
+        val bestScheme = packingSchemes.filter { (product.quantity / it.qty) == bestOption.first().key }.first()
+        val bestPacking = bestOption.first()
+        for (i in 0..bestPacking.key.toInt() - 1) {
+            bestScheme.box.availableQTY = 0
+            product.quantity -= bestScheme.qty
+            packs.add(Pack(bestScheme.box, mutableMapOf(product to bestScheme.qty.toInt())))
         }
-
-
-//
-//        if (totalPackedQuantity <= product.quantity) {
-//            currentCombination.getOrPut(box) { mutableMapOf() }[product] = totalPackedQuantity
-//            generateCombinationsRecursively(packingOptions, remainingShipments, currentCombination, combinations)
-//            currentCombination[box]?.put(product, currentPackedQuantity)
-//
-//            if (currentCombination[box]?.get(product) == 0) {
-//                currentCombination[box]?.remove(product)
-//            }
-//
-//            if (currentCombination[box]?.isEmpty() == true) {
-//                currentCombination.remove(box)
-//            }
-//        }
+    } else if (restByDiv.containsFillableBox()){
+        val optionPicked = restByDiv.entries.filter { it.key > 1.00 }.minBy { it.key }
+        val pickedScheme = packingSchemes.filter { (product.quantity / it.qty) == optionPicked.key }.first()
+        pickedScheme.box.availableQTY = 0
+        product.quantity -= pickedScheme.qty
+        packs.add(Pack(pickedScheme.box, mutableMapOf(product to pickedScheme.qty.toInt())))
+    } else {
+        val optionPicked = restByDiv.entries.maxBy { it.key }
+        val pickedScheme = packingSchemes.filter { (product.quantity / it.qty) == optionPicked.key }.first()
+        pickedScheme.box.availableQTY = pickedScheme.box.availableQTY!! - optionPicked.value
+        product.quantity -= optionPicked.value
+        packs.add(Pack(pickedScheme.box, mutableMapOf(product to optionPicked.value.toInt())))
     }
 }
+
+fun MutableMap<Double, Int>.containsFillableBox() = this.keys.any { it > 1.00 }
+
+//fun generateCombinationsRecursively(
+//    packingOptions: Map<Box, List<Pair<Product, Int>>>,
+//    shipments: List<ShipmentBatch>,
+//    currentCombination: MutableMap<Box, MutableMap<Product, Int>>,
+//    combinations: MutableList<Map<Box, Map<Product, Int>>>) {
+//
+//    if (shipments.isEmpty()) {
+//        combinations.add(currentCombination.mapValues { it.value.toMap() })
+//        return
+//    }
+//
+//    val batch = shipments.first()
+//    val remainingShipments = shipments.drop(1)
+//    val product = batch.product
+//    val packingSchemes = batch.packingSchemes
+//
+//    for (scheme in packingSchemes) {
+//        val box = scheme.box
+//        val quantity = scheme.qty
+//
+////        val currentPackedQuantity = currentCombination[box]?.get(product) ?: 0
+////        val totalPackedQuantity = currentPackedQuantity + quantity
+//
+//        if (product.quantity % scheme.qty == 0.00) {
+//            currentCombination.getOrPut(box) { mutableMapOf() }[product] = scheme.qty
+//            product.quantity -= scheme.qty
+//        } else {
+//
+//        }
+//
+//
+////
+////        if (totalPackedQuantity <= product.quantity) {
+////            currentCombination.getOrPut(box) { mutableMapOf() }[product] = totalPackedQuantity
+////            generateCombinationsRecursively(packingOptions, remainingShipments, currentCombination, combinations)
+////            currentCombination[box]?.put(product, currentPackedQuantity)
+////
+////            if (currentCombination[box]?.get(product) == 0) {
+////                currentCombination[box]?.remove(product)
+////            }
+////
+////            if (currentCombination[box]?.isEmpty() == true) {
+////                currentCombination.remove(box)
+////            }
+////        }
+//    }
+//}
 
 fun Any.prettyPrint(t: String = "") {
     println("$t ---------------------------------------------------------------------------")
