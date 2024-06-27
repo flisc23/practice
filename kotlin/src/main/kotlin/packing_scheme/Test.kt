@@ -21,24 +21,34 @@ data class Pack(
 )
 
 fun main() {
-//    val products = listOf(
-//        Product("Product 1", 50, 50, 50, 3),
-//        Product("Product 2", 70, 250, 70, 5)
-//    )
     val shipments = listOf(
-        ShipmentBatch(Product("Product 1", 50, 50, 50, 10.00),
+//        ShipmentBatch(
+//            Product("Product 1", 50, 50, 50, 10.00),
+//            listOf(
+//                PackingScheme(3.00, Box("Small Box-1", 100, 100, 100, 1000, availableQTY = 3)),
+//                PackingScheme(5.00, Box("Medium Box-1", 200, 200, 200, 2000, availableQTY = 5)),
+//                PackingScheme(10.00, Box("Large Box-1", 500, 500, 500, 3000, availableQTY = 10)),
+//            )
+//        ),
+//        ShipmentBatch(
+//            Product("Product 2", 70, 300, 70, 8.00),
+//            listOf(
+//                PackingScheme(3.00, Box("Small Box-2", 100, 100, 100, 1000, availableQTY = 3)),
+//                PackingScheme(5.00, Box("Medium Box-2", 200, 200, 200, 2000, availableQTY = 5)),
+//                PackingScheme(10.00, Box("Large Box-2", 500, 500, 500, 3000, availableQTY = 10)),
+//            )
+//        ),
+        ShipmentBatch(
+            Product("Product 3", 70, 300, 70, 12.00),
             listOf(
-                PackingScheme(3.00, Box("Small Box-1", 100, 100, 100, 1000,  availableQTY = 3)),
+                PackingScheme(3.00, Box("Small Box-2", 100, 100, 100, 1000, availableQTY = 3)),
                 PackingScheme(5.00, Box("Medium Box-1", 200, 200, 200, 2000, availableQTY = 5)),
                 PackingScheme(10.00, Box("Large Box-1", 500, 500, 500, 3000, availableQTY = 10)),
-            )),
-        ShipmentBatch(Product("Product 2", 70, 300, 70, 8.00),
-            listOf(
-                PackingScheme(3.00, Box("Small Box-2", 100, 100, 100, 1000, availableQTY = 2)),
-                PackingScheme(5.00, Box("Medium Box-2", 200, 200, 200, 2000, availableQTY = 5)),
-                PackingScheme(10.00, Box("Large Box-2", 500, 500, 500, 3000, availableQTY = 7)),
-            ))
+                PackingScheme(15.00, Box("X-Large Box-3", 500, 500, 500, 3000, availableQTY = 15)),
+            )
+        )
     )
+
 
     // Finding the best packing method
     val bestPacking = generateOptions(shipments)
@@ -58,9 +68,8 @@ fun generateOptions(shipments: List<ShipmentBatch>) {
             findMatchInSchemes(packingSchemes, product, packs)
         } while (product.quantity != 0.00)
 
-       "stop".prettyPrint()
+//       "stop".prettyPrint()
 
-        // AFL 6/6/24 TODO : check product.quantity == 0, and call the above logic recursively
         // AFL 6/6/24 TODO : consider reiterating on final version
     }
     packs.forEach { it.prettyPrint() }
@@ -78,6 +87,16 @@ private fun findMatchInSchemes(
         restByDiv.set((product.quantity / it.qty), (product.quantity % it.qty).toInt())
     }
     restByDiv = restByDiv.toSortedMap()
+
+//    val maxQtyFillable = packingSchemes.filter { it.qty < product.quantity }.maxByOrNull { it.qty }?.deepCopy()
+//
+//    if (maxQtyFillable != null) {
+//        maxQtyFillable.box.availableQTY = 0
+//        product.quantity -= maxQtyFillable.qty
+//        packs.add(Pack(maxQtyFillable.box, mutableMapOf(product to maxQtyFillable.qty.toInt())))
+//        return
+//    }
+
     // rest 0 and min nr. of boxes
     val bestOption = restByDiv.entries.filter { it.value == 0 && it.key != 0.00 }
 
