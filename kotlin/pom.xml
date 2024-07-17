@@ -16,8 +16,14 @@
 	<properties>
 		<java.version>17</java.version>
 		<kotlin.version>1.8.22</kotlin.version>
+		<packer.version>3.0.9</packer.version>
 	</properties>
 	<dependencies>
+		<dependency>
+			<groupId>com.github.skjolber.3d-bin-container-packing</groupId>
+			<artifactId>core</artifactId>
+			<version>${packer.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jdbc</artifactId>
