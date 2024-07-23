@@ -71,13 +71,12 @@ public class Packer   {
         // line of products
         products.add(new StackableItem(Box.newBuilder().withDescription(desc).withSize(2, 1, 1).withRotate3D().withWeight(1).build(), 1));
         products.add(new StackableItem(Box.newBuilder().withDescription(desc).withSize(1, 2, 1).withRotate3D().withWeight(1).build(), 1));
-//        products.add(new StackableItem(Box.newBuilder().withDescription(desc).withSize(1, 2, 1).withRotate3D().withWeight(1).build(), 1));
+//      products.add(new StackableItem(Box.newBuilder().withDescription(desc).withSize(1, 2, 1).withRotate3D().withWeight(1).build(), 1));
         products.add(new StackableItem(Box.newBuilder().withDescription(desc).withSize(3, 1, 1).withRotate3D().withWeight(1).build(), 1));
         products.add(new StackableItem(Box.newBuilder().withDescription(desc).withSize(2, 1, 1).withRotate3D().withWeight(1).build(), 1));
         products.add(new StackableItem(Box.newBuilder().withDescription(desc).withSize(1, 1, 1).withRotate3D().withWeight(1).build(), 1));
         products.add(new StackableItem(Box.newBuilder().withDescription(desc).withSize(1, 1, 1).withRotate3D().withWeight(1).build(), 1));
         return products;
     }
-
 
 }
