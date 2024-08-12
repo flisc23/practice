@@ -1,20 +1,101 @@
 import com.github.skjolber.packing.api.*;
+import com.github.skjolber.packing.packer.laff.FastLargestAreaFitFirstPackager;
 import com.github.skjolber.packing.packer.laff.LargestAreaFitFirstPackager;
 import com.github.skjolber.packing.packer.plain.PlainPackager;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Packer   {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 //        plainPackerTest();
-        test_PROD_case();
-        test_PROD_case_LAF();
+//        test_PROD_case();
+//        test_PROD_case_LAF();
+        test_10602220_DELIVERY_NOTE();
         System.out.println("stop");
     }
+
+    public static void test_10602220_DELIVERY_NOTE() throws Exception {
+        List<ContainerItem> containers = new ArrayList<>();
+        containers.add(buildContainer(50 , 50 , 50)); //test
+        containers.add(buildContainer(400 , 400 , 400));
+        containers.add(buildContainer(400 , 200 , 400));
+        containers.add(buildContainer(600 , 410 , 800));
+        containers.add(buildContainer(220 , 200 , 230));
+        containers.add(buildContainer(380 , 400 , 600));
+        containers.add(buildContainer(200 , 200 , 400));
+        containers.add(buildContainer(480 , 410 , 800));
+        containers.add(buildContainer(220 , 200 , 230));
+        containers.add(buildContainer(200 , 200 , 400));
+        containers.add(buildContainer(400 , 200 , 400));
+        containers.add(buildContainer(480 , 410 , 800));
+        containers.add(buildContainer(400 , 400 , 400));
+        containers.add(buildContainer(380 , 400 , 600));
+        containers.add(buildContainer(600 , 410 , 800));
+
+        List<StackableItem> products = new ArrayList<>();
+        products.add(new StackableItem(Box.newBuilder().withDescription("desc")
+                .withSize(200, 200, 100).withRotate3D().withWeight(1).build(), 3));
+        products.add(new StackableItem(Box.newBuilder().withDescription("desc")
+                .withSize(100, 150, 140).withRotate3D().withWeight(1).build(), 2));
+
+        double totalProductVolume = products.stream()
+                .mapToLong(product -> product.getStackable().getVolume() * product.getCount())
+                .sum();
+
+        List<PackagerResult> results = new ArrayList<>();
+
+        // Different strategies for different maximum container counts
+        for (int maxContainerCount = 1; maxContainerCount <= 5; maxContainerCount++) {
+            FastLargestAreaFitFirstPackager packager = FastLargestAreaFitFirstPackager.newBuilder().build();
+
+            PackagerResult result = packager.newResultBuilder()
+                    .withContainers(containers)
+                    .withMaxContainerCount(maxContainerCount)
+                    .withStackables(products)
+                    .build();
+
+            if (result.isSuccess()) {
+                results.add(result);
+            }
+        }
+
+        Optional<PackagerResult> bestResult = results.stream()
+                .min(Comparator.comparingInt((PackagerResult res) -> res.getContainers().size())
+                        .thenComparingDouble(res -> Packer.averageContainerVolumeUsage(res)));
+
+
+        // Output the best result
+        if (bestResult.isPresent()) {
+            System.out.println("Best packing result found:");
+            PackagerResult result = bestResult.get();
+            for (Container containerResult : result.getContainers()) {
+                double filledVolume = calculateFilledVolume(containerResult);
+                double totalVolume = containerResult.getStack().getVolume();
+                double percentageFilled = (filledVolume / totalVolume) * 100;
+                System.out.printf("Container: %s, Volume filled: %.2f%%\n",
+                        containerResult.getDescription(), percentageFilled);
+            }
+        } else {
+            System.out.println("No valid packing options found.");
+        }
+
+
+    }
+
+    private static double averageContainerVolumeUsage(PackagerResult result) {
+        return result.getContainers().stream()
+                .mapToDouble(Packer::calculateFilledVolume)
+                .average()
+                .orElse(0);
+    }
+
+    private static double calculateFilledVolume(Container containerResult) {
+        return containerResult.getStack().getPlacements().stream()
+                .mapToDouble(p -> p.getStackable().getVolume())
+                .sum();
+    }
+
 
     private static ContainerItem getRandomContainer() {
         Random random = new Random();
@@ -26,14 +107,31 @@ public class Packer   {
                 .build(), 1);
     }
 
+    private static List<ContainerItem> buildListContainer(Integer x, Integer y, Integer z) {
+        Random random = new Random();
+        Container container = Container.newBuilder()
+                .withDescription(UUID.randomUUID().toString())
+                .withEmptyWeight(1)
+                .withSize(x, y, z)
+                .withMaxLoadWeight(100)
+                .build();
+
+// with unlimited number of containers available
+        List<ContainerItem> containerItems = ContainerItem
+                .newListBuilder()
+                .withContainer(container)
+                .build();
+        return  containerItems;
+    }
+
     private static ContainerItem buildContainer(Integer x, Integer y, Integer z) {
         Random random = new Random();
         return new ContainerItem(Container.newBuilder()
                 .withDescription(UUID.randomUUID().toString())
                 .withEmptyWeight(1)
                 .withSize(x, y, z)
-                .withMaxLoadWeight(100)
-                .build(), 1);
+                .withMaxLoadWeight(1)
+                .build(), 2);
     }
 
     private static void plainPackerTest() {
@@ -45,9 +143,10 @@ public class Packer   {
 //        External Box 600x380x400 BC-640
 //        External Box 230x220x200 3C-420
 //        External Box 400x400x200 BC-640
-        containers.add(buildContainer(600, 380, 400));
+
+
 //        containers.add(buildContainer(230,220, 200));
-//        containers.add(buildContainer(400, 400, 200));
+//        containers.addAll(buildContainer(400, 400, 200));
         List<ContainerItem> sortedContainers = containers.stream()
                 .sorted((c1, c2) -> c1.getContainer().getVolume() < c2.getContainer().getVolume() ? -1 : 1)
                 .collect(Collectors.toList());
@@ -107,8 +206,10 @@ public class Packer   {
 //        External box 800x480x410
 //        External box 400x200x200
 
-        containers.add(buildContainer(230, 220, 200));
+//        containers = buildContainer(230, 220, 200);
         List<StackableItem> products = new ArrayList<>();
+        products.add(new StackableItem(Box.newBuilder().withDescription("desc")
+                .withSize(200, 200, 100).withRotate3D().withWeight(1).build(), 2));
         products.add(new StackableItem(Box.newBuilder().withDescription("desc")
                 .withSize(200, 200, 100).withRotate3D().withWeight(1).build(), 2));
 
@@ -149,7 +250,7 @@ public class Packer   {
 //        External box 800x480x410
 //        External box 400x200x200
 
-        containers.add(buildContainer(230, 220, 200));
+//        containers.add(buildContainer(230, 220, 200));
         List<StackableItem> products = new ArrayList<>();
         products.add(new StackableItem(Box.newBuilder().withDescription("desc")
                 .withSize(200, 200, 100).withRotate3D().withWeight(1).build(), 2));
