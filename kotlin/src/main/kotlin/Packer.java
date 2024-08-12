@@ -1,4 +1,5 @@
 import com.github.skjolber.packing.api.*;
+import com.github.skjolber.packing.packer.bruteforce.BruteForcePackager;
 import com.github.skjolber.packing.packer.laff.FastLargestAreaFitFirstPackager;
 import com.github.skjolber.packing.packer.laff.LargestAreaFitFirstPackager;
 import com.github.skjolber.packing.packer.plain.PlainPackager;
@@ -12,53 +13,83 @@ public class Packer   {
 //        test_PROD_case();
 //        test_PROD_case_LAF();
         test_10602220_DELIVERY_NOTE();
-        System.out.println("stop");
+//        System.out.println("stop");
     }
 
     public static void test_10602220_DELIVERY_NOTE() throws Exception {
         List<ContainerItem> containers = new ArrayList<>();
+//        containers.addAll(buildListContainer(400 , 400 , 400));
+        containers.add(buildContainer(100 , 100 , 50));
         containers.add(buildContainer(50 , 50 , 50)); //test
-        containers.add(buildContainer(400 , 400 , 400));
-        containers.add(buildContainer(400 , 200 , 400));
-        containers.add(buildContainer(600 , 410 , 800));
-        containers.add(buildContainer(220 , 200 , 230));
-        containers.add(buildContainer(380 , 400 , 600));
-        containers.add(buildContainer(200 , 200 , 400));
-        containers.add(buildContainer(480 , 410 , 800));
-        containers.add(buildContainer(220 , 200 , 230));
-        containers.add(buildContainer(200 , 200 , 400));
-        containers.add(buildContainer(400 , 200 , 400));
-        containers.add(buildContainer(480 , 410 , 800));
-        containers.add(buildContainer(400 , 400 , 400));
-        containers.add(buildContainer(380 , 400 , 600));
-        containers.add(buildContainer(600 , 410 , 800));
+        containers.addAll(buildListContainer(600 , 410 , 800));
+        containers.addAll(buildListContainer(400 , 200 , 400));
+        containers.addAll(buildListContainer(220 , 200 , 230));
+        containers.addAll(buildListContainer(380 , 400 , 600));
+        containers.addAll(buildListContainer(200 , 200 , 400));
+        containers.addAll(buildListContainer(480 , 410 , 800));
+        containers.addAll(buildListContainer(220 , 200 , 230));
+        containers.addAll(buildListContainer(200 , 200 , 400));
+        containers.addAll(buildListContainer(400 , 200 , 400));
+        containers.addAll(buildListContainer(480 , 410 , 800));
+        containers.addAll(buildListContainer(400 , 400 , 400));
+        containers.addAll(buildListContainer(380 , 400 , 600));
+        containers.addAll(buildListContainer(600 , 410 , 800));
 
+        containers.sort(Comparator.comparing(c -> c.getContainer().getVolume()));
         List<StackableItem> products = new ArrayList<>();
         products.add(new StackableItem(Box.newBuilder().withDescription("desc")
                 .withSize(200, 200, 100).withRotate3D().withWeight(1).build(), 3));
         products.add(new StackableItem(Box.newBuilder().withDescription("desc")
                 .withSize(100, 150, 140).withRotate3D().withWeight(1).build(), 2));
 
-        double totalProductVolume = products.stream()
-                .mapToLong(product -> product.getStackable().getVolume() * product.getCount())
-                .sum();
+//        double totalProductVolume = products.stream()
+//                .mapToLong(product -> product.getStackable().getVolume() * product.getCount())
+//                .sum();
 
         List<PackagerResult> results = new ArrayList<>();
 
-        // Different strategies for different maximum container counts
-        for (int maxContainerCount = 1; maxContainerCount <= 5; maxContainerCount++) {
-            FastLargestAreaFitFirstPackager packager = FastLargestAreaFitFirstPackager.newBuilder().build();
+//        PlainPackager packager = PlainPackager.newBuilder().build();
+//        FastLargestAreaFitFirstPackager packager = FastLargestAreaFitFirstPackager.newBuilder().build();
+        LargestAreaFitFirstPackager packager = LargestAreaFitFirstPackager.newBuilder().build();
+//        BruteForcePackager packager = BruteForcePackager.newBuilder().build();
 
-            PackagerResult result = packager.newResultBuilder()
-                    .withContainers(containers)
-                    .withMaxContainerCount(maxContainerCount)
-                    .withStackables(products)
-                    .build();
 
-            if (result.isSuccess()) {
-                results.add(result);
-            }
+        PackagerResult build = packager.newResultBuilder()
+                .withContainers(containers)
+                .withMaxContainerCount(10)
+                .withStackables(products)
+                .build();
+        System.out.println("\n PLAIN \n");
+        if (build.isSuccess()) {
+            build.getContainers().forEach(container -> {
+                System.out.println("\t Container: " + container.getDescription() + String.format(" (%s x %s x %s), Volume: %d",
+                        container.getStack().getContainerStackValue().getDx(),
+                        container.getStack().getContainerStackValue().getDy(),
+                        container.getStack().getContainerStackValue().getDz(),
+                        container.getVolume()));
+                container.getStack().getPlacements().forEach(c -> System.out.println("Pos:" + c.toString() +
+                        "Sizes: " + c.getStackValue().getDx() +
+                        " x " + c.getStackValue().getDy() +
+                        " x " + c.getStackValue().getDz()));
+            });
+        } else {
+            System.out.println("ERROR PACKING");
         }
+
+        // Different strategies for different maximum container counts
+//        for (int maxContainerCount = 1; maxContainerCount <= 5; maxContainerCount++) {
+//            FastLargestAreaFitFirstPackager packager = FastLargestAreaFitFirstPackager.newBuilder().build();
+//
+//            PackagerResult result = packager.newResultBuilder()
+//                    .withContainers(containers)
+//                    .withMaxContainerCount(maxContainerCount)
+//                    .withStackables(products)
+//                    .build();
+//
+//            if (result.isSuccess()) {
+//                results.add(result);
+//            }
+//        }
 
         Optional<PackagerResult> bestResult = results.stream()
                 .min(Comparator.comparingInt((PackagerResult res) -> res.getContainers().size())
@@ -66,19 +97,19 @@ public class Packer   {
 
 
         // Output the best result
-        if (bestResult.isPresent()) {
-            System.out.println("Best packing result found:");
-            PackagerResult result = bestResult.get();
-            for (Container containerResult : result.getContainers()) {
-                double filledVolume = calculateFilledVolume(containerResult);
-                double totalVolume = containerResult.getStack().getVolume();
-                double percentageFilled = (filledVolume / totalVolume) * 100;
-                System.out.printf("Container: %s, Volume filled: %.2f%%\n",
-                        containerResult.getDescription(), percentageFilled);
-            }
-        } else {
-            System.out.println("No valid packing options found.");
-        }
+//        if (bestResult.isPresent()) {
+//            System.out.println("Best packing result found:");
+//            PackagerResult result = bestResult.get();
+//            for (Container containerResult : result.getContainers()) {
+//                double filledVolume = calculateFilledVolume(containerResult);
+//                double totalVolume = containerResult.getStack().getVolume();
+//                double percentageFilled = (filledVolume / totalVolume) * 100;
+//                System.out.printf("Container: %s, Volume filled: %.2f%%\n",
+//                        containerResult.getDescription(), percentageFilled);
+//            }
+//        } else {
+//            System.out.println("No valid packing options found.");
+//        }
 
 
     }
