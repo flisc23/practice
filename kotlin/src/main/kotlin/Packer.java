@@ -18,9 +18,9 @@ public class Packer   {
 
     public static void test_10602220_DELIVERY_NOTE() throws Exception {
         List<ContainerItem> containers = new ArrayList<>();
-//        containers.addAll(buildListContainer(400 , 400 , 400));
-        containers.add(buildContainer(100 , 100 , 50));
-        containers.add(buildContainer(50 , 50 , 50)); //test
+        containers.addAll(buildListContainer(400 , 400 , 400));
+//        containers.add(buildContainer(100 , 100 , 50)); //test
+//        containers.add(buildContainer(50 , 50 , 50)); //test
         containers.addAll(buildListContainer(600 , 410 , 800));
         containers.addAll(buildListContainer(400 , 200 , 400));
         containers.addAll(buildListContainer(220 , 200 , 230));
