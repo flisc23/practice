@@ -70,7 +70,7 @@ fun test_10602220_DELIVERY_NOTE() {
     })
     val uniqueContainers = containers.toSortedSet(containerItemComparator).toList()
 
-    containers.forEach { c -> println("${c.container.stackValues[0].dx} x " +
+    uniqueContainers.forEach { c -> println("${c.container.stackValues[0].dx} x " +
             "                          ${c.container.stackValues[0].dy} x " +
             "                          ${c.container.stackValues[0].dz}") }
     val products: MutableList<StackableItem> = ArrayList()
